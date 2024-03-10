@@ -6,6 +6,8 @@
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 214, 219, 220;
   --background-end-rgb: 255, 255, 255;
+  --black : 0,0,0;
+  --white : 255, 255, 255;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -17,11 +19,14 @@
 }
 
 body {
-  color: rgb(var(--foreground-rgb));
-  background: linear-gradient(
-      to bottom,
-      transparent,
-      rgb(var(--background-end-rgb))
-    )
-    rgb(var(--background-start-rgb));
+  color: rgb(var(--white));
+  background: rgb(var(--black));
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 0; /* Removes scrollbar on Chrome/Safari */
+}
+
+.custom-scrollbar {
+  scrollbar-width: none; /* Removes scrollbar on Firefox */
 }
