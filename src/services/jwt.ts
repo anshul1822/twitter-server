@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { User } from "@prisma/client";
 import { jwtUser } from "../interfaces";
 
-const JWT_SECRET = '@wi@@er';
+// console.log(process.env.JWT_SECRET);
 
 class JWTService{
 
@@ -12,7 +12,7 @@ class JWTService{
             id : user?.id,
             email : user?.email
         }
-        const token = jwt.sign(payload, JWT_SECRET);
+        const token = jwt.sign(payload, process.env.JWT_SECRET as string);
         return token;
     }
 
@@ -23,7 +23,7 @@ class JWTService{
         console.log('jwtToekn', jwtToken);
 
         try {
-            const payload = jwt.verify(jwtToken ,JWT_SECRET);
+            const payload = jwt.verify(jwtToken ,process.env.JWT_SECRET as string);
             // console.log(payload);
             return payload as jwtUser;
         } catch (error) {
