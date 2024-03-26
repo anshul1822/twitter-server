@@ -72,6 +72,28 @@ class UserService {
         if(!userInDb) return null;
         return userInDb;
      }
+
+     public static async followUser(from : string, to : string){
+        await prismaClient.follows.create({
+            data : {
+                follower : {connect : {id : from}},
+                following : {connect : {id : to}}
+            }
+        })
+        return true;
+     }
+
+     public static async unfollowUser (from :string, to : string){
+        await prismaClient.follows.delete({
+            where : {
+                followerId_followingId : {
+                    followerId : from ,
+                    followingId : to
+              } 
+            }          
+        })
+        return true;
+     }
 }
 
 export default UserService;
