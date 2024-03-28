@@ -5,6 +5,7 @@ import JWTService from '../../services/jwt';
 import { GraphqlContext } from '../../interfaces';
 import { User } from '@prisma/client';
 import UserService from '../../services/user';
+import { redisClient } from '../../client/redis';
 
 
 const queries = {
@@ -17,25 +18,43 @@ const queries = {
 
     getCurrentUser : async(parent: any, args:any, ctx : GraphqlContext) => {
         // console.log(ctx);
-        const id = ctx.user?.id;
+        const id = ctx.user?.id;   
         const userInDb = await UserService.getCurrentUser(id as string);
         return userInDb;
     },
 
     getUserById : async(parent : any, {id} : {id : string}, ctx : GraphqlContext) => {
 
+        const cachedUser = await redisClient.get(`LOGGED_IN_USER_${id}`);
+        if(cachedUser) return JSON.parse(cachedUser);
+
         const userInDb = await UserService.getUserById(id as string);
+
+        await redisClient.set(`LOGGED_IN_USER_${id}`, JSON.stringify(userInDb));
         return userInDb;
+    },
+
+    logoutUser : async (parent : any, {} : {}, ctx : GraphqlContext) => {
+     
+        await redisClient.del(`RECOMMENDED_USERS:${ctx?.user?.id}`);
+        await redisClient.del(`LOGGED_IN_USER_${ctx?.user?.id}`);
+        await redisClient.del(`CURRENT_USER${ctx?.user?.id}`);
+        await redisClient.del('ALL_TWEETS');
+
+        return true;
     }
+
 }
 
 const mutations = {
-    followUser : (parent : any, {to} : {to : string}, ctx : GraphqlContext) =>{
+    followUser : async(parent : any, {to} : {to : string}, ctx : GraphqlContext) =>{
         if(!ctx.user || !ctx.user.id) throw Error ('Unauthorised')
+        await redisClient.del(`RECOMMENDED_USERS:${ctx.user.id}`);
         return UserService.followUser(ctx.user.id, to);
     },
-    unfollowUser : (parent : any, {to} : {to : string}, ctx : GraphqlContext) =>{
+    unfollowUser : async(parent : any, {to} : {to : string}, ctx : GraphqlContext) =>{
         if(!ctx.user || !ctx.user.id) throw Error ('Unauthorised')
+        await redisClient.del(`RECOMMENDED_USERS:${ctx.user.id}`);
         return UserService.unfollowUser(ctx.user.id, to);
     }
 }
@@ -77,6 +96,9 @@ const extraResolvers = {
         recommendedUsers : async(parent : User, _ : any, ctx : GraphqlContext) => {
             if(!ctx.user) return [];
 
+            const cachedValue = await redisClient.get(`RECOMMENDED_USERS:${ctx.user.id}`);
+            if(cachedValue) return JSON.parse(cachedValue);
+
             const myFollowings = await prismaClient.follows.findMany({
                 where : {
                     followerId : ctx.user.id
@@ -101,6 +123,8 @@ const extraResolvers = {
                         }                        
                 }
             }
+
+            await redisClient.set(`RECOMMENDED_USERS:${ctx.user.id}`, JSON.stringify(users));
 
             return users;
         }

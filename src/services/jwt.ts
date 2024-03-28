@@ -20,7 +20,7 @@ class JWTService{
         // console.log('decodeToken', token);
 
         const jwtToken = token.split(' ')[1];
-        console.log('jwtToekn', jwtToken);
+        // console.log('jwtToekn', jwtToken);
 
         try {
             const payload = jwt.verify(jwtToken ,process.env.JWT_SECRET as string);
